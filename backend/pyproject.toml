@@ -1,0 +1,21 @@
+[project]
+name = "Precificador"
+version = "1.0.0"
+description = "API para precificação"
+authors = [
+    {name = "Hudson Barbosa de Almeida", email = "hbamaster@hotmail.com"},
+]
+dependencies = ["fastapi>=0.116.1", "uvicorn>=0.35.0", "sqlalchemy>=2.0.41", "pydantic>=2.11.7", "httpx>=0.28.1", "python-dotenv>=1.1.1"]
+requires-python = "==3.13.*"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "anyio>=4.9.0",
+]
