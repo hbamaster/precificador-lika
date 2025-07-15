@@ -9,7 +9,7 @@ services:
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11
+        value: 3.11.7
       - key: SECRET_KEY
         value: GxJv53xIsMwcm10F1F_PsvY9DhTCCPGRr4AornpoEWU
 
