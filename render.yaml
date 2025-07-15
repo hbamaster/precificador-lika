@@ -12,14 +12,15 @@ services:
         value: 3.11
       - key: SECRET_KEY
         value: sua-chave-secreta-aqui
-      # Adicione outras variáveis conforme sua lógica de autenticação
 
-  - type: static
+  - type: web
     name: precificador-frontend
+    env: node
+    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    startCommand: serve -s dist
+    autoDeploy: true
     envVars:
       - key: VITE_API_URL
         value: https://precificador-lika.onrender.com/api/fretes
-    autoDeploy: true
