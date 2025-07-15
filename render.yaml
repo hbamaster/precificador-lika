@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: precificador-backend
+    env: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: SECRET_KEY
+        value: sua-chave-secreta-aqui
+      # Adicione outras variáveis conforme sua lógica de autenticação
+
+  - type: static
+    name: precificador-frontend
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://precificador-lika.onrender.com/api/fretes
+    autoDeploy: true
