@@ -5,13 +5,13 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 10000
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
         value: 3.11
       - key: SECRET_KEY
-        value: sua-chave-secreta-aqui
+        value: GxJv53xIsMwcm10F1F_PsvY9DhTCCPGRr4AornpoEWU
 
   - type: web
     name: precificador-frontend
