@@ -12,15 +12,3 @@ services:
         value: 3.11.7
       - key: SECRET_KEY
         value: GxJv53xIsMwcm10F1F_PsvY9DhTCCPGRr4AornpoEWU
-
-  - type: web
-    name: precificador-frontend
-    env: node
-    plan: free
-    rootDir: frontend
-    buildCommand: npm install && npm run build
-    startCommand: serve -s dist
-    autoDeploy: true
-    envVars:
-      - key: VITE_API_URL
-        value: https://precificador-lika.onrender.com/api/fretes
