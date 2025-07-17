@@ -1,55 +1,74 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from datetime import datetime, timedelta
+from typing import Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from .database import get_db
-from .schemas import Token
-from .crud import get_user, verify_password
-from .auth import create_access_token
-from typing import Annotated
-import logging
 
-logger = logging.getLogger(__name__)
-router = APIRouter(tags=["Autenticação"])
+from app.config import settings
+from app.database import get_db
+from app.models import Usuario  # modelo que representa o usuário no banco
+from app.schemas import TokenData  # schema com username do token
 
-@router.post(
-    "/login",
-    response_model=Token,
-    summary="Autenticação de usuário",
-    description="Realiza login e retorna token JWT",
-    responses={
-        401: {"description": "Credenciais inválidas"},
-        500: {"description": "Erro interno no servidor"}
-    }
-)
-async def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Annotated[Session, Depends(get_db)]
-):
-    """
-    Autentica um usuário e retorna um token de acesso JWT.
-    
-    - **username**: Email ou nome de usuário
-    - **password**: Senha do usuário
-    """
-    try:
-        user = get_user(db, form_data.username)
-        if not user or not verify_password(form_data.password, user.password_hash):
-            logger.warning(f"Tentativa de login inválida para: {form_data.username}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Credenciais incorretas",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+# Configurações de segurança
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-        return {
-            "access_token": create_access_token({"sub": user.username}),
-            "token_type": "bearer",
-            "expires_in": 3600
-        }
+# Criptografia
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
-    except Exception as e:
-        logger.error(f"Erro durante login: {str(e)}")
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+# Buscar usuário no banco
+def get_user(db: Session, username: str) -> Optional[Usuario]:
+    return db.query(Usuario).filter(Usuario.username == username).first()
+
+# Autenticar
+def authenticate_user(db: Session, username: str, password: str) -> Optional[Usuario]:
+    user = get_user(db, username)
+    if not user or not verify_password(password, user.hashed_password):
+        return None
+    return user
+
+# Criar JWT
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+# Rota /token
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Erro durante a autenticação"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciais inválidas",
+            headers={"WWW-Authenticate": "Bearer"},
         )
+    access_token = create_access_token(data={"sub": user.username})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+# Verifica token e retorna usuário autenticado
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token inválido",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = get_user(db, username)
+    if user is None:
+        raise credentials_exception
+    return user

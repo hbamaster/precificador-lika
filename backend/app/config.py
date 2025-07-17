@@ -1,14 +1,24 @@
-# app/config.py
-from pydantic_settings import BaseSettings  
+from pydantic import BaseSettings, Field, AnyHttpUrl
+from typing import List
 
 class Settings(BaseSettings):
-    database_url: str
-    fernet_key: str
-    secret_key: str
-    algorithm: str = "HS256"
-    access_token_expires_minutes: int = 60
+    # Segurança
+    SECRET_KEY: str = Field(..., description="Chave secreta para geração de tokens JWT")
+    ALGORITHM: str = Field(default="HS256", description="Algoritmo de assinatura do token")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60, description="Expiração do token em minutos")
+
+    # Banco de dados
+    DATABASE_URL: str = Field(..., description="URL de conexão com PostgreSQL")
+
+    # CORS
+    ALLOWED_ORIGINS: List[AnyHttpUrl] = [
+        "http://localhost:3000",
+        "https://precificador-site.onrender.com"
+    ]
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
 
+# Instância global
 settings = Settings()

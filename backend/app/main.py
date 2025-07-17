@@ -1,17 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, frete, indicadores  # exemplo
-from app.dependencies import get_db
+from app.config import settings
+from app.routers import auth, frete, indicadores  # Ajuste conforme seus módulos
 
 app = FastAPI()
 
-# CORS Config
+# Middleware de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # dev local (Next.js)
-        "https://precificador-site.onrender.com",  # futuro frontend Render
-    ],
+    allow_origins=[str(origin) for origin in settings.ALLOWED_ORIGINS],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -21,3 +18,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(frete.router)
 app.include_router(indicadores.router)
+
+# Rota de status simples
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
